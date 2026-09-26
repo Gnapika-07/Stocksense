@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StockSense — Inventory Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14171c; --steel:#3a4149; --steel-2:#4d5560; --paper:#eae7de; --paper-2:#f5f3ec;
+  --amber:#e8a33d; --amber-dk:#c9832a; --red:#c0392b; --green:#4c7a5e; --line:#c9c4b6;
+  --white:#fff;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box;
+}
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);height:100%;}
+html,body{height:100%;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+h1,h2,h3,.disp{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.2px;}
+button{font-family:'Inter',sans-serif;cursor:pointer;}
+input,select{font-family:'Inter',sans-serif;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--steel-2);}
+
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);}
+.login-box{background:var(--paper-2);width:min(380px,90vw);padding:36px 32px;border-top:6px solid var(--amber);}
+.login-box h1{font-size:38px;margin:0 0 4px;color:var(--ink);}
+.login-box p.sub{margin:0 0 24px;color:var(--steel);font-size:13px;}
+.login-box .err{background:#f6dedb;color:var(--red);font-size:12px;padding:8px 10px;margin-bottom:14px;display:none;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;color:var(--steel);margin-bottom:5px;}
+.field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--white);font-size:14px;}
+.field input:focus{outline:2px solid var(--amber);outline-offset:1px;}
+.btn{border:none;padding:11px 18px;font-size:14px;font-weight:600;background:var(--ink);color:var(--white);}
+.btn:hover{background:#000;}
+.btn.primary{background:var(--amber);color:var(--ink);}
+.btn.primary:hover{background:var(--amber-dk);}
+.btn.block{width:100%;}
+.btn[disabled]{opacity:.55;cursor:not-allowed;}
+.link-btn{background:none;border:none;color:var(--steel);font-size:12px;text-decoration:underline;padding:0;}
+.otp-row{display:flex;gap:8px;}
+.otp-row input{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:18px;padding:10px 0;}
+
+#app{display:none;min-height:100vh;}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:210px;flex-shrink:0;background:var(--ink);color:var(--paper-2);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);}
+.brand{padding:20px 18px 16px;border-bottom:1px solid #2a2f36;}
+.brand .disp{font-size:26px;color:var(--white);margin:0;}
+.brand .tag{font-size:10px;color:var(--amber);margin-top:2px;}
+.nav{flex:1;padding:10px 0;overflow-y:auto;}
+.nav a{display:flex;align-items:center;gap:10px;padding:11px 18px;color:#c7cbd1;text-decoration:none;font-size:14px;border-left:3px solid transparent;}
+.nav a:hover{background:#1e232a;}
+.nav a.active{background:#1e232a;border-left-color:var(--amber);color:var(--white);font-weight:600;}
+.nav .sec-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#5c636d;padding:14px 18px 4px;}
+.profile-menu{border-top:1px solid #2a2f36;padding:12px 18px;position:relative;}
+.profile-menu button{background:none;border:none;color:var(--paper-2);font-size:13px;display:flex;align-items:center;gap:8px;width:100%;padding:6px 0;}
+.avatar{width:26px;height:26px;background:var(--amber);color:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.pmenu{display:none;position:absolute;bottom:52px;left:14px;right:14px;background:var(--paper-2);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.3);}
+.pmenu.open{display:block;}
+.pmenu button.item{width:100%;text-align:left;padding:10px 14px;background:none;border:none;font-size:13px;color:var(--ink);}
+.pmenu button.item:hover{background:var(--paper);}
+
+.main{flex:1;min-width:0;padding:22px 26px 40px;overflow-x:hidden;}
+.topbar{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.topbar h2{font-size:30px;margin:0;}
+.topbar .meta{font-size:12px;color:var(--steel);}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:20px;}
+.kpi{background:var(--paper-2);padding:16px 14px;}
+.kpi .n{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;}
+.kpi .l{font-size:11px;color:var(--steel);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.kpi.warn .n{color:var(--red);}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.filters select,.filters input[type=text]{padding:8px 10px;border:1px solid var(--line);background:var(--paper-2);font-size:13px;}
+
+.panel{background:var(--paper-2);border:1px solid var(--line);}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--steel);}
+td{padding:10px 14px;border-bottom:1px solid var(--line);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--paper);}
+.status{padding:2px 8px;font-size:11px;font-weight:600;display:inline-block;}
+.status.Draft{background:#ddd8c9;color:var(--steel);}
+.status.Waiting{background:#f0d9a8;color:#7a5a10;}
+.status.Ready{background:#cfe0e6;color:#255266;}
+.status.Done{background:#cfe3d4;color:var(--green);}
+.status.Canceled{background:#ecd0cc;color:var(--red);}
+.qty-neg{color:var(--red);} .qty-pos{color:var(--green);}
+.empty{padding:40px 20px;text-align:center;color:var(--steel);font-size:13px;}
+
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+.search{padding:8px 10px;border:1px solid var(--line);width:220px;font-size:13px;background:var(--paper-2);}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(20,23,28,.55);z-index:50;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;}
+.overlay.open{display:flex;}
+.modal{background:var(--paper-2);width:min(480px,100%);border-top:5px solid var(--amber);}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);}
+.modal-head h3{margin:0;font-size:22px;}
+.modal-head button{background:none;border:none;font-size:20px;color:var(--steel);}
+.modal-body{padding:18px 20px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
+.line-item{display:grid;grid-template-columns:2fr 1fr 30px;gap:8px;margin-bottom:8px;align-items:center;}
+.line-item select,.line-item input{padding:8px;border:1px solid var(--line);font-size:13px;}
+.rm-btn{background:none;border:none;color:var(--red);font-size:16px;}
+.add-line{font-size:12px;color:var(--ink);background:none;border:1px dashed var(--steel-2);padding:6px 10px;width:100%;margin-top:4px;}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--ink);color:var(--white);padding:12px 18px;font-size:13px;z-index:60;border-left:4px solid var(--green);}
+.toast.error{border-left-color:var(--red);}
+.api-badge{position:fixed;top:10px;right:14px;font-size:10px;padding:4px 8px;background:var(--ink);color:var(--paper-2);z-index:70;font-family:'IBM Plex Mono',monospace;}
+
+@media (max-width:820px){
+  .shell{flex-direction:column;}
+  .sidebar{width:100%;flex-direction:row;overflow-x:auto;}
+  .brand{border:none;padding:12px;} .nav{display:flex;padding:0;} .nav .sec-label{display:none;}
+  .nav a{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;}
+  .nav a.active{border-bottom-color:var(--amber);}
+  .profile-menu{display:none;}
+  .main{padding:16px;}
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--paper:#1b1e24;--paper-2:#22262d;--ink:#f0efe9;--line:#3a4149;--steel:#9aa1ab;}
+}
+:root[data-theme="dark"]{--paper:#1b1e24;--paper-2:#22262d;--ink:#f0efe9;--line:#3a4149;--steel:#9aa1ab;}
+</style>
+</head>
+<body>
+
+<div class="api-badge" id="apiBadge">API: checking…</div>
+
+<div id="loginScreen">
+  <div class="login-box" id="loginBox"></div>
+</div>
+
+<div id="app">
+  <div class="shell">
+    <div class="sidebar">
+      <div class="brand"><div class="disp">STOCKSENSE</div><div class="tag">INVENTORY CONTROL</div></div>
+      <nav class="nav" id="navList"></nav>
+      <div class="profile-menu">
+        <div class="pmenu" id="pmenu">
+          <button class="item" onclick="showView('profile')">My Profile</button>
+          <button class="item" onclick="logout()">Logout</button>
+        </div>
+        <button onclick="document.getElementById('pmenu').classList.toggle('open')">
+          <span class="avatar" id="avatarInit">U</span> <span id="profName">User</span> ▾
+        </button>
+      </div>
+    </div>
+    <div class="main" id="main"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div id="toastHost"></div>
+
+<script>
+/* ============================================================================
+   STOCKSENSE — Frontend
+   Talks to the Express/PostgreSQL API in server.js over fetch(). No business
+   data is kept in localStorage — only the JWT session token, so a refresh
+   doesn't force a re-login. Everything else is fetched live from the API.
+   ============================================================================ */
+
+// Point this at wherever server.js is running.
+const API_BASE = window.STOCKSENSE_API_BASE || 'http://localhost:4000/api';
+
+let TOKEN = localStorage.getItem('stocksense_token') || null;
+let CURRENT_USER = JSON.parse(localStorage.getItem('stocksense_user') || 'null');
+let WAREHOUSES = [];   // cached after login: [{id,name}, ...]
+let PRODUCTS = [];     // cached after login, refreshed per view
+
+/* ---------------- API helper ---------------- */
+async function api(path, { method = 'GET', body } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (TOKEN) headers.Authorization = `Bearer ${TOKEN}`;
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  } catch (e) {
+    toast('Cannot reach the StockSense API — is server.js running?', true);
+    throw e;
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    toast(data.error || `Request failed (${res.status})`, true);
+    throw new Error(data.error || `HTTP ${res.status}`);
+  }
+  return data;
+}
+
+async function pingApi() {
+  const badge = document.getElementById('apiBadge');
+  try {
+    await fetch(`${API_BASE.replace(/\/api$/, '')}/`).catch(() => {});
+    badge.textContent = `API: ${API_BASE}`;
+  } catch { badge.textContent = 'API: unreachable'; }
+}
+pingApi();
+
+function toast(msg, isError = false) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.textContent = msg;
+  document.getElementById('toastHost').appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+function val(id) { return document.getElementById(id).value.trim(); }
+function openModal() { document.getElementById('overlay').classList.add('open'); }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeModal(); });
+
+function totalStock(p) { return Number(p.total_stock || 0); }
+function prodName(id) { const p = PRODUCTS.find(p => p.id == id); return p ? p.name : '—'; }
+function whName(id) { const w = WAREHOUSES.find(w => w.id == id); return w ? w.name : '—'; }
+
+/* ---------------- LOGIN / SIGNUP / OTP RESET ---------------- */
+let loginStep = 'login';
+let resetEmail = '';
+
+function renderLogin() {
+  const box = document.getElementById('loginBox');
+  if (loginStep === 'login') {
+    box.innerHTML = `
+      <h1>STOCKSENSE</h1><p class="sub">Sign in to manage inventory</p>
+      <div class="field"><label>Email</label><input id="li_email" type="email" placeholder="you@company.com"></div>
+      <div class="field"><label>Password</label><input id="li_pass" type="password" placeholder="••••••••"></div>
+      <button class="btn primary block" onclick="doLogin()">Log In</button>
+      <div style="text-align:center;margin-top:12px;display:flex;justify-content:space-between;">
+        <button class="link-btn" onclick="loginStep='signup';renderLogin()">Create account</button>
+        <button class="link-btn" onclick="loginStep='reset';renderLogin()">Forgot password?</button>
+      </div>`;
+  } else if (loginStep === 'signup') {
+    box.innerHTML = `
+      <h1>Create Account</h1><p class="sub">Set up your StockSense login</p>
+      <div class="field"><label>Name</label><input id="su_name" placeholder="e.g. Priya Rao"></div>
+      <div class="field"><label>Email</label><input id="su_email" type="email" placeholder="you@company.com"></div>
+      <div class="field"><label>Password</label><input id="su_pass" type="password" placeholder="min. 6 characters"></div>
+      <div class="field"><label>Role</label>
+        <select id="su_role"><option>Inventory Manager</option><option>Warehouse Staff</option></select>
+      </div>
+      <button class="btn primary block" onclick="doSignup()">Sign Up</button>
+      <div style="text-align:center;margin-top:12px;"><button class="link-btn" onclick="loginStep='login';renderLogin()">Back to login</button></div>`;
+  } else if (loginStep === 'reset') {
+    box.innerHTML = `
+      <h1>Reset Password</h1><p class="sub">We'll send a one-time code to your email</p>
+      <div class="field"><label>Email</label><input id="rs_email" type="email" placeholder="you@company.com"></div>
+      <button class="btn primary block" onclick="sendOtp()">Send OTP</button>
+      <div style="text-align:center;margin-top:12px;"><button class="link-btn" onclick="loginStep='login';renderLogin()">Back to login</button></div>`;
+  } else if (loginStep === 'otp') {
+    box.innerHTML = `
+      <h1>Enter Code</h1><p class="sub">Check the server console for your OTP (demo mode)</p>
+      <div class="field"><label>OTP Code</label><input id="otp_code" maxlength="4" class="mono" placeholder="4-digit code"></div>
+      <div class="field"><label>New Password</label><input id="np_pass" type="password" placeholder="New password"></div>
+      <button class="btn primary block" onclick="finishReset()">Reset & Log In</button>`;
+  }
+}
+
+async function doSignup() {
+  const name = val('su_name'), email = val('su_email'), password = val('su_pass'), role = val('su_role');
+  if (!name || !email || !password) { toast('Name, email and password are required', true); return; }
+  try {
+    const data = await api('/auth/signup', { method: 'POST', body: { name, email, password, role } });
+    setSession(data.token, data.user);
+  } catch { /* toasted already */ }
+}
+async function doLogin() {
+  const email = val('li_email'), password = val('li_pass');
+  if (!email || !password) { toast('Email and password are required', true); return; }
+  try {
+    const data = await api('/auth/login', { method: 'POST', body: { email, password } });
+    setSession(data.token, data.user);
+  } catch { /* toasted already */ }
+}
+async function sendOtp() {
+  resetEmail = val('rs_email');
+  if (!resetEmail) { toast('Enter your email first', true); return; }
+  try {
+    const data = await api('/auth/otp/request', { method: 'POST', body: { email: resetEmail } });
+    toast(data.demoOtp ? `Demo OTP: ${data.demoOtp}` : 'OTP sent — check your email');
+    loginStep = 'otp'; renderLogin();
+  } catch { /* toasted already */ }
+}
+async function finishReset() {
+  const code = val('otp_code'), newPassword = val('np_pass');
+  try {
+    await api('/auth/otp/verify', { method: 'POST', body: { email: resetEmail, code, newPassword } });
+    toast('Password updated — please log in'); loginStep = 'login'; renderLogin();
+  } catch { /* toasted already */ }
+}
+
+function setSession(token, user) {
+  TOKEN = token; CURRENT_USER = user;
+  localStorage.setItem('stocksense_token', token);
+  localStorage.setItem('stocksense_user', JSON.stringify(user));
+  enterApp();
+}
+function logout() {
+  TOKEN = null; CURRENT_USER = null;
+  localStorage.removeItem('stocksense_token'); localStorage.removeItem('stocksense_user');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  loginStep = 'login'; renderLogin();
+}
+async function enterApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('avatarInit').textContent = CURRENT_USER.name[0].toUpperCase();
+  document.getElementById('profName').textContent = CURRENT_USER.name.split(' ')[0];
+  WAREHOUSES = await api('/warehouses');
+  showView('dashboard');
+}
+
+/* ---------------- NAV ---------------- */
+const NAV = [
+  { sec: 'Overview', items: [['dashboard', 'Dashboard']] },
+  { sec: 'Products', items: [['products', 'Products']] },
+  { sec: 'Operations', items: [['receipts', 'Receipts'], ['deliveries', 'Delivery Orders'], ['transfers', 'Internal Transfers'], ['adjustments', 'Stock Adjustments'], ['history', 'Move History']] },
+  { sec: 'System', items: [['settings', 'Settings']] }
+];
+function renderNav(active) {
+  document.getElementById('navList').innerHTML = NAV.map(g =>
+    `<div class="sec-label">${g.sec}</div>` + g.items.map(([k, l]) => `<a href="#" class="${k === active ? 'active' : ''}" onclick="showView('${k}');return false;">${l}</a>`).join('')
+  ).join('');
+}
+
+let currentView = 'dashboard';
+async function showView(v) {
+  currentView = v; renderNav(v); document.getElementById('pmenu').classList.remove('open');
+  const m = document.getElementById('main');
+  m.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    if (v === 'dashboard') m.innerHTML = await viewDashboard();
+    else if (v === 'products') m.innerHTML = await viewProducts();
+    else if (v === 'receipts') m.innerHTML = await viewOps('receipts', 'Receipts', 'supplier', 'Supplier');
+    else if (v === 'deliveries') m.innerHTML = await viewOps('deliveries', 'Delivery Orders', 'customer', 'Customer');
+    else if (v === 'transfers') m.innerHTML = await viewTransfers();
+    else if (v === 'adjustments') m.innerHTML = await viewAdjustments();
+    else if (v === 'history') m.innerHTML = await viewHistory();
+    else if (v === 'settings') m.innerHTML = await viewSettings();
+    else if (v === 'profile') m.innerHTML = viewProfile();
+  } catch (e) {
+    m.innerHTML = `<div class="empty">Couldn't load this view. ${e.message || ''}</div>`;
+  }
+}
+
+/* ---------------- DASHBOARD ---------------- */
+async function viewDashboard() {
+  const { kpis, recentActivity } = await api('/dashboard');
+  return `
+  <div class="topbar"><h2>Dashboard</h2><div class="meta">${WAREHOUSES.length} warehouses · ${new Date().toLocaleDateString()}</div></div>
+  <div class="kpis">
+    <div class="kpi"><div class="n">${kpis.total_products}</div><div class="l">Products in Stock</div></div>
+    <div class="kpi ${kpis.low_stock_items > 0 ? 'warn' : ''}"><div class="n">${kpis.low_stock_items}</div><div class="l">Low / Out of Stock</div></div>
+    <div class="kpi"><div class="n">${kpis.pending_receipts}</div><div class="l">Pending Receipts</div></div>
+    <div class="kpi"><div class="n">${kpis.pending_deliveries}</div><div class="l">Pending Deliveries</div></div>
+    <div class="kpi"><div class="n">${kpis.transfers_scheduled}</div><div class="l">Transfers Scheduled</div></div>
+  </div>
+  <div class="filters">
+    <select onchange="showView('dashboard')"><option>All Document Types</option><option>Receipts</option><option>Delivery</option><option>Internal</option></select>
+    <select><option>All Statuses</option><option>Draft</option><option>Waiting</option><option>Ready</option><option>Done</option><option>Canceled</option></select>
+    <select><option selected>All Warehouses</option>${WAREHOUSES.map(w => `<option>${w.name}</option>`).join('')}</select>
+  </div>
+  <div class="panel">
+    <table><thead><tr><th>Type</th><th>Reference</th><th>Party</th><th>Date</th><th>Status</th></tr></thead><tbody>
+    ${recentActivity.length ? recentActivity.map(r => `<tr><td>${r.type}</td><td class="mono">${r.reference}</td><td>${r.party}</td><td class="mono">${r.date ? String(r.date).slice(0,10) : ''}</td><td><span class="status ${r.status}">${r.status}</span></td></tr>`).join('') : '<tr><td colspan=5 class="empty">No activity yet</td></tr>'}
+    </tbody></table>
+  </div>`;
+}
+
+/* ---------------- PRODUCTS ---------------- */
+async function viewProducts(search = '') {
+  PRODUCTS = await api(`/products${search ? `?search=${encodeURIComponent(search)}` : ''}`);
+  return `
+  <div class="topbar"><h2>Products</h2><div class="meta">${PRODUCTS.length} items</div></div>
+  <div class="toolbar">
+    <input class="search" placeholder="Search SKU or name..." oninput="filterProducts(this.value)">
+    <button class="btn primary" onclick="openProductModal()">+ New Product</button>
+  </div>
+  <div class="panel"><table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>UoM</th><th>Stock by Location</th><th>Total</th></tr></thead>
+  <tbody id="prodRows">${productRows(PRODUCTS)}</tbody></table></div>`;
+}
+function productRows(list) {
+  if (!list.length) return '<tr><td colspan=6 class="empty">No products found</td></tr>';
+  return list.map(p => `<tr>
+    <td>${p.name}</td><td class="mono">${p.sku}</td><td>${p.category || 'Uncategorized'}</td><td class="mono">${p.uom}</td>
+    <td class="mono">${Object.entries(p.stock_by_warehouse || {}).map(([w, q]) => `${w}: ${q}`).join(' · ') || '—'}</td>
+    <td class="mono ${totalStock(p) < 15 ? 'qty-neg' : ''}">${totalStock(p)}</td>
+  </tr>`).join('');
+}
+let filterTimer;
+function filterProducts(q) {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(async () => {
+    const list = await api(`/products?search=${encodeURIComponent(q)}`);
+    document.getElementById('prodRows').innerHTML = productRows(list);
+  }, 250);
+}
+function openProductModal() {
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-head"><h3>New Product</h3><button onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Name</label><input id="np_name"></div>
+      <div class="field"><label>SKU / Code</label><input id="np_sku" class="mono"></div>
+      <div class="field"><label>Category</label><input id="np_cat" placeholder="e.g. Raw Material"></div>
+      <div class="field"><label>Unit of Measure</label><input id="np_uom" placeholder="e.g. kg, pcs, roll"></div>
+      <div class="field"><label>Warehouse</label><select id="np_wh">${WAREHOUSES.map(w => `<option value="${w.id}">${w.name}</option>`).join('')}</select></div>
+      <div class="field"><label>Initial Stock (optional)</label><input id="np_stock" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveProduct()">Save Product</button></div>`;
+  openModal();
+}
+async function saveProduct() {
+  const name = val('np_name'), sku = val('np_sku');
+  if (!name || !sku) { toast('Name and SKU are required', true); return; }
+  try {
+    await api('/products', { method: 'POST', body: {
+      name, sku, category: val('np_cat') || 'Uncategorized', uom: val('np_uom') || 'pcs',
+      warehouseId: Number(val('np_wh')), initialStock: Number(val('np_stock')) || 0
+    }});
+    closeModal(); toast('Product created'); showView('products');
+  } catch { /* toasted already */ }
+}
+
+/* ---------------- RECEIPTS / DELIVERIES (shared) ---------------- */
+async function viewOps(key, title, partyField, partyLabel) {
+  const rows = await api(`/${key}`);
+  window['_rows_' + key] = rows;
+  return `
+  <div class="topbar"><h2>${title}</h2><div class="meta">${rows.length} documents</div></div>
+  <div class="toolbar"><div></div><button class="btn primary" onclick="openOpModal('${key}','${partyField}','${partyLabel}')">+ New ${title.slice(0, -1)}</button></div>
+  <div class="panel"><table><thead><tr><th>Reference</th><th>${partyLabel}</th><th>Warehouse</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>
+  ${rows.length ? rows.map(r => `<tr>
+    <td class="mono">${r.reference}</td><td>${r[partyField]}</td><td>${r.warehouse_name}</td><td class="mono">${String(r.scheduled_date).slice(0,10)}</td>
+    <td><span class="status ${r.status}">${r.status}</span></td>
+    <td>${r.status !== 'Done' && r.status !== 'Canceled' ? `<button class="btn" style="padding:6px 10px;font-size:12px;" onclick="validateOp('${key}',${r.id})">Validate</button>` : '—'}</td>
+  </tr>`).join('') : `<tr><td colspan=6 class="empty">No ${title.toLowerCase()} yet</td></tr>`}
+  </tbody></table></div>`;
+}
+async function openOpModal(key, partyField, partyLabel) {
+  PRODUCTS = PRODUCTS.length ? PRODUCTS : await api('/products');
+  window._opLines = [{ productId: PRODUCTS[0]?.id, qty: 1 }];
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-head"><h3>New ${key === 'receipts' ? 'Receipt' : 'Delivery Order'}</h3><button onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>${partyLabel}</label><input id="op_party" placeholder="${partyLabel} name"></div>
+      <div class="field"><label>Warehouse</label><select id="op_wh">${WAREHOUSES.map(w => `<option value="${w.id}">${w.name}</option>`).join('')}</select></div>
+      <label style="font-size:12px;color:var(--steel);display:block;margin-bottom:6px;">Products</label>
+      <div id="opLines"></div>
+      <button class="add-line" onclick="addOpLine()">+ Add product line</button>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveOp('${key}','${partyField}')">Create Draft</button></div>`;
+  renderOpLines(); openModal();
+}
+function renderOpLines() {
+  document.getElementById('opLines').innerHTML = window._opLines.map((l, i) => `
+    <div class="line-item">
+      <select onchange="window._opLines[${i}].productId=Number(this.value)">${PRODUCTS.map(p => `<option value="${p.id}" ${p.id === l.productId ? 'selected' : ''}>${p.name} (${p.sku})</option>`).join('')}</select>
+      <input type="number" min="1" value="${l.qty}" onchange="window._opLines[${i}].qty=Number(this.value)">
+      <button class="rm-btn" onclick="window._opLines.splice(${i},1);renderOpLines()">✕</button>
+    </div>`).join('');
+}
+function addOpLine() { window._opLines.push({ productId: PRODUCTS[0]?.id, qty: 1 }); renderOpLines(); }
+async function saveOp(key, partyField) {
+  const party = val('op_party'); if (!party) { toast(partyField + ' is required', true); return; }
+  const body = { warehouseId: Number(val('op_wh')), lines: window._opLines };
+  body[partyField] = party;
+  try {
+    await api(`/${key}`, { method: 'POST', body });
+    closeModal(); toast('Draft created'); showView(key);
+  } catch { /* toasted already */ }
+}
+async function validateOp(key, id) {
+  try {
+    await api(`/${key}/${id}/validate`, { method: 'POST' });
+    toast('Validated — stock updated'); showView(key);
+  } catch { /* toasted already */ }
+}
+
+/* ---------------- TRANSFERS ---------------- */
+async function viewTransfers() {
+  const rows = await api('/transfers');
+  return `
+  <div class="topbar"><h2>Internal Transfers</h2><div class="meta">${rows.length} documents</div></div>
+  <div class="toolbar"><div></div><button class="btn primary" onclick="openTransferModal()">+ New Transfer</button></div>
+  <div class="panel"><table><thead><tr><th>Reference</th><th>From</th><th>To</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>
+  ${rows.length ? rows.map(r => `<tr><td class="mono">${r.reference}</td><td>${r.from_warehouse}</td><td>${r.to_warehouse}</td><td class="mono">${String(r.scheduled_date).slice(0,10)}</td>
+    <td><span class="status ${r.status}">${r.status}</span></td>
+    <td>${r.status !== 'Done' ? `<button class="btn" style="padding:6px 10px;font-size:12px;" onclick="validateTransfer(${r.id})">Validate</button>` : '—'}</td></tr>`).join('') : '<tr><td colspan=6 class="empty">No transfers yet</td></tr>'}
+  </tbody></table></div>`;
+}
+async function openTransferModal() {
+  PRODUCTS = PRODUCTS.length ? PRODUCTS : await api('/products');
+  window._opLines = [{ productId: PRODUCTS[0]?.id, qty: 1 }];
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-head"><h3>New Internal Transfer</h3><button onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>From</label><select id="tr_from">${WAREHOUSES.map(w => `<option value="${w.id}">${w.name}</option>`).join('')}</select></div>
+      <div class="field"><label>To</label><select id="tr_to">${WAREHOUSES.map((w, i) => `<option value="${w.id}" ${i === 1 ? 'selected' : ''}>${w.name}</option>`).join('')}</select></div>
+      <label style="font-size:12px;color:var(--steel);display:block;margin-bottom:6px;">Products</label>
+      <div id="opLines"></div><button class="add-line" onclick="addOpLine()">+ Add product line</button>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveTransfer()">Create Draft</button></div>`;
+  renderOpLines(); openModal();
+}
+async function saveTransfer() {
+  const from = Number(val('tr_from')), to = Number(val('tr_to'));
+  if (from === to) { toast('From and To must differ', true); return; }
+  try {
+    await api('/transfers', { method: 'POST', body: { fromWarehouseId: from, toWarehouseId: to, lines: window._opLines } });
+    closeModal(); toast('Transfer draft created'); showView('transfers');
+  } catch { /* toasted already */ }
+}
+async function validateTransfer(id) {
+  try { await api(`/transfers/${id}/validate`, { method: 'POST' }); toast('Transfer validated'); showView('transfers'); }
+  catch { /* toasted already */ }
+}
+
+/* ---------------- ADJUSTMENTS ---------------- */
+async function viewAdjustments() {
+  const rows = await api('/adjustments');
+  return `
+  <div class="topbar"><h2>Stock Adjustments</h2><div class="meta">Fix mismatches between recorded and physical count</div></div>
+  <div class="toolbar"><div></div><button class="btn primary" onclick="openAdjModal()">+ New Adjustment</button></div>
+  <div class="panel"><table><thead><tr><th>Product</th><th>Warehouse</th><th>Before</th><th>Counted</th><th>Diff</th><th>Date</th></tr></thead><tbody>
+  ${rows.length ? rows.map(a => `<tr><td>${a.product_name}</td><td>${a.warehouse_name}</td><td class="mono">${a.before_qty}</td><td class="mono">${a.counted_qty}</td>
+    <td class="mono ${a.diff_qty < 0 ? 'qty-neg' : 'qty-pos'}">${a.diff_qty > 0 ? '+' : ''}${a.diff_qty}</td><td class="mono">${String(a.created_at).slice(0,10)}</td></tr>`).join('') : '<tr><td colspan=6 class="empty">No adjustments logged</td></tr>'}
+  </tbody></table></div>`;
+}
+async function openAdjModal() {
+  PRODUCTS = PRODUCTS.length ? PRODUCTS : await api('/products');
+  document.getElementById('modal').innerHTML = `
+    <div class="modal-head"><h3>New Adjustment</h3><button onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Product</label><select id="adj_prod">${PRODUCTS.map(p => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join('')}</select></div>
+      <div class="field"><label>Warehouse</label><select id="adj_wh">${WAREHOUSES.map(w => `<option value="${w.id}">${w.name}</option>`).join('')}</select></div>
+      <div class="field"><label>Counted Quantity</label><input id="adj_qty" type="number" placeholder="Physical count"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveAdjustment()">Apply Adjustment</button></div>`;
+  openModal();
+}
+async function saveAdjustment() {
+  const productId = Number(val('adj_prod')), warehouseId = Number(val('adj_wh')), countedQty = Number(val('adj_qty'));
+  if (isNaN(countedQty)) { toast('Enter a counted quantity', true); return; }
+  try {
+    await api('/adjustments', { method: 'POST', body: { productId, warehouseId, countedQty } });
+    closeModal(); toast('Stock adjusted'); showView('adjustments');
+  } catch { /* toasted already */ }
+}
+
+/* ---------------- HISTORY / SETTINGS / PROFILE ---------------- */
+async function viewHistory() {
+  const rows = await api('/ledger');
+  return `<div class="topbar"><h2>Move History</h2><div class="meta">${rows.length} entries</div></div>
+  <div class="panel"><table><thead><tr><th>Type</th><th>Detail</th><th>Date</th></tr></thead><tbody>
+  ${rows.length ? rows.map(l => `<tr><td><span class="status Done">${l.movement_type}</span></td><td>${l.description}</td><td class="mono">${String(l.created_at).slice(0,16).replace('T',' ')}</td></tr>`).join('') : '<tr><td colspan=3 class="empty">No stock movements yet — validate a receipt, delivery, transfer or adjustment</td></tr>'}
+  </tbody></table></div>`;
+}
+async function viewSettings() {
+  return `<div class="topbar"><h2>Settings</h2></div>
+  <h3 style="margin-bottom:8px;">Warehouses</h3>
+  <div class="panel" style="margin-bottom:18px;"><table><tbody>
+  ${WAREHOUSES.map(w => `<tr><td>${w.name}</td><td class="mono">${w.code || ''}</td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="field" style="max-width:280px;"><label>Add Warehouse</label><input id="new_wh" placeholder="e.g. Warehouse 3"></div>
+  <button class="btn primary" onclick="addWarehouse()">Add Warehouse</button>`;
+}
+async function addWarehouse() {
+  const name = val('new_wh'); if (!name) return;
+  try {
+    await api('/warehouses', { method: 'POST', body: { name } });
+    WAREHOUSES = await api('/warehouses');
+    toast('Warehouse added'); showView('settings');
+  } catch { /* toasted already */ }
+}
+function viewProfile() {
+  return `<div class="topbar"><h2>My Profile</h2></div>
+  <div class="panel" style="padding:20px;max-width:420px;">
+    <div class="field"><label>Name</label><input id="pf_name" value="${CURRENT_USER.name}"></div>
+    <div class="field"><label>Email</label><input id="pf_email" value="${CURRENT_USER.email}"></div>
+    <div class="field"><label>Role</label><input value="${CURRENT_USER.role || ''}" disabled></div>
+    <button class="btn primary" onclick="saveProfile()">Save Changes</button>
+  </div>`;
+}
+async function saveProfile() {
+  try {
+    const updated = await api('/profile', { method: 'PUT', body: { name: val('pf_name'), email: val('pf_email') } });
+    CURRENT_USER = updated; localStorage.setItem('stocksense_user', JSON.stringify(updated));
+    document.getElementById('avatarInit').textContent = CURRENT_USER.name[0].toUpperCase();
+    document.getElementById('profName').textContent = CURRENT_USER.name.split(' ')[0];
+    toast('Profile updated');
+  } catch { /* toasted already */ }
+}
+
+/* ---------------- INIT ---------------- */
+renderLogin();
+if (TOKEN && CURRENT_USER) { enterApp(); }
+</script>
+</body>
+</html>
